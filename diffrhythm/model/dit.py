@@ -28,8 +28,8 @@ from diffrhythm.model.modules import (
     precompute_freqs_cis,
     get_pos_embed_indices,
 )
-from liger_kernel.transformers import apply_liger_kernel_to_llama
-apply_liger_kernel_to_llama()
+# from liger_kernel.transformers import apply_liger_kernel_to_llama
+# apply_liger_kernel_to_llama()
 
 # Text embedding
 
