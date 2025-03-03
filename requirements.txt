@@ -31,4 +31,3 @@ lazy_loader==0.4
 scipy==1.15.2
 ftfy==6.3.1
 torchdiffeq==0.2.5
-flash-attn --no-build-isolation
