@@ -185,7 +185,8 @@ must_not_er_words = {"女儿", "老儿", "男儿", "少儿", "小儿"}
 
 chinese_lexicon_path =  hf_hub_download(
                         repo_id="ASLP-lab/DiffRhythm",
-                        filename="chinese_lexicon.txt"
+                        filename="diffrhythm/g2p/sources/chinese_lexicon.txt",
+                        repo_type="space"
                     )
 word_pinyin_dict = {}
 with open(chinese_lexicon_path, "r", encoding="utf-8") as fread:
