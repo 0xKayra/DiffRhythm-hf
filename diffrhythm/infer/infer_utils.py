@@ -35,7 +35,7 @@ def prepare_model(device):
     # prepare vae
     vae_ckpt_path = hf_hub_download(repo_id="ASLP-lab/DiffRhythm-vae", filename="vae_model.pt")
     print(f"****************** {device} ******************")
-    vae = torch.jit.load(vae_ckpt_path).to(device)
+    vae = torch.jit.load(vae_ckpt_path, map_location=device)
     
     return cfm, tokenizer, muq, vae
     
