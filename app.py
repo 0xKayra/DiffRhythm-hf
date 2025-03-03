@@ -13,7 +13,7 @@ from tqdm import tqdm
 import random
 import numpy as np
 import sys
-from diffrhythm.infer.infer_util import (
+from diffrhythm.infer.infer_utils import (
     get_reference_latent,
     get_lrc_token,
     get_style_prompt,
