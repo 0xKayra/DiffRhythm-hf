@@ -72,7 +72,7 @@ def decode_audio(latents, vae_model, chunked=False, overlap=32, chunk_size=128):
             y_final[:,:,t_start:t_end] = y_chunk[:,:,chunk_start:chunk_end]
         return y_final
 
-def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative_style_prompt, start_time, steps):
+def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative_style_prompt, steps, sway_sampling_coef, start_time):
     # import pdb; pdb.set_trace()
     with torch.inference_mode():
         generated, _ = cfm_model.sample(
@@ -81,8 +81,9 @@ def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative
             duration=duration,
             style_prompt=style_prompt,
             negative_style_prompt=negative_style_prompt,
-            steps=32,
+            steps=steps,
             cfg_strength=4.0,
+            sway_sampling_coef=sway_sampling_coef,
             start_time=start_time
         )
         
@@ -100,10 +101,10 @@ def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lrc-path', type=str, default="/home/node59_tmpdata3/hkchen/DiffRhythm/diffrhythm/diffrhythm/infer/example/eg.lrc") # lyrics of target song
-    parser.add_argument('--ref-audio-path', type=str, default="/home/node59_tmpdata3/hkchen/DiffRhythm/diffrhythm/diffrhythm/infer/example/eg.mp3") # reference audio as style prompt for target song
+    parser.add_argument('--lrc-path', type=str, default="example/eg.lrc") # lyrics of target song
+    parser.add_argument('--ref-audio-path', type=str, default="example/eg.mp3") # reference audio as style prompt for target song
     parser.add_argument('--audio-length', type=int, default=95) # length of target song
-    parser.add_argument('--output-dir', type=str, default="/home/node59_tmpdata3/hkchen/DiffRhythm/diffrhythm/diffrhythm/infer/example/output")
+    parser.add_argument('--output-dir', type=str, default="example/output")
     args = parser.parse_args()
     
     device = 'cuda'

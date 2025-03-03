@@ -22,16 +22,13 @@ from diffrhythm.infer.infer_utils import (
 )
 from diffrhythm.infer.infer import inference
 
-device='cuda'
+device='cpu'
 cfm, tokenizer, muq, vae = prepare_model(device)
 cfm = torch.compile(cfm)
 
-def infer_music(lrc, ref_audio_path, max_frames=2048, device='cuda'):
-    
-    # lrc_list = lrc.split("\n")
-    # print(lrc_list)
-    
-    # return "./gift_of_the_world.wav"
+def infer_music(lrc, ref_audio_path, steps, sway_sampling_coef_bool, max_frames=2048, device='cpu'):
+
+    sway_sampling_coef = -1 if sway_sampling_coef_bool else None
     lrc_prompt, start_time = get_lrc_token(lrc, tokenizer, device)
     style_prompt = get_style_prompt(muq, ref_audio_path)
     negative_style_prompt = get_negative_style_prompt(device)
@@ -43,6 +40,8 @@ def infer_music(lrc, ref_audio_path, max_frames=2048, device='cuda'):
                                duration=max_frames, 
                                style_prompt=style_prompt,
                                negative_style_prompt=negative_style_prompt,
+                               steps=steps,
+                               sway_sampling_coef=sway_sampling_coef,
                                start_time=start_time
                                )
     return generated_song
@@ -150,6 +149,22 @@ with gr.Blocks(css=css) as demo:
                     audio_prompt = gr.Audio(label="Audio Prompt", type="filepath")
                     
                 with gr.Column():
+                    steps = gr.Slider(
+                                    minimum=10,
+                                    maximum=40,
+                                    value=32, 
+                                    step=1,
+                                    label="Diffusion Steps",
+                                    interactive=True,
+                                    elem_id="step_slider"
+                                )
+                    sway_sampling_coef_bool = gr.Radio(
+                                    choices=[("False", False), ("True", True)],
+                                    label="Use sway_sampling_coef",
+                                    value=False, 
+                                    interactive=True,
+                                    elem_classes="horizontal-radio"
+                                )
                     lyrics_btn = gr.Button("Submit", variant="primary")
                     audio_output = gr.Audio(label="Audio Result", type="filepath", elem_id="audio_output")
                     
@@ -210,7 +225,7 @@ with gr.Blocks(css=css) as demo:
 [01:24.20]Your laughter spins aurora threads
 [01:28.65]Weaving dawn through featherbed"""]
                 ],
-                inputs=[lrc],  # 只绑定到歌词输入
+                inputs=[lrc], 
                 label="Lrc Examples",
                 examples_per_page=2
             )
@@ -306,7 +321,7 @@ with gr.Blocks(css=css) as demo:
     
     lyrics_btn.click(
         fn=infer_music,
-        inputs=[lrc, audio_prompt],
+        inputs=[lrc, audio_prompt, steps, sway_sampling_coef_bool],
         outputs=audio_output
     )
     
