@@ -6,14 +6,14 @@ from muq import MuQMuLan
 from mutagen.mp3 import MP3
 import os
 import numpy as np
-
+from huggingface_hub import hf_hub_download
 from diffrhythm.model import DiT, CFM
 
 
 def prepare_model(device):
     # prepare cfm model
-    dit_ckpt_path = "/home/node59_tmpdata3/hkchen/music_opensource/dit_model_dpo_normal.pt"
-    dit_config_path = "/home/node59_tmpdata3/hkchen/DiffRhythm/diffrhythm/diffrhythm/config/diffrhythm-1b.json"
+    dit_ckpt_path = hf_hub_download(repo_id="ASLP-lab/DiffRhythm-base", filename="cfm_model.pt")
+    dit_config_path = "./diffrhythm/config/diffrhythm-1b.json"
     with open(dit_config_path) as f:
         model_config = json.load(f)
     dit_model_cls = DiT
@@ -33,7 +33,8 @@ def prepare_model(device):
     muq = muq.to(device).eval()
     
     # prepare vae
-    vae = torch.jit.load("/home/node59_tmpdata3/hkchen/F5-TTS-V0/infer/vae_infer.pt").to(device)
+    vae_ckpt_path = hf_hub_download(repo_id="ASLP-lab/DiffRhythm-vae", filename="vae_model.pt")
+    vae = torch.jit.load(vae_ckpt_path).to(device)
     
     return cfm, tokenizer, muq, vae
     
@@ -43,7 +44,7 @@ def get_reference_latent(device, max_frames):
     return torch.zeros(1, max_frames, 64).to(device)
 
 def get_negative_style_prompt(device):
-    file_path = "/home/node59_tmpdata3/hkchen/DiffRhythm/diffrhythm/diffrhythm/infer/example/vocal.npy"
+    file_path = "./prompt/negative_prompt.npy"
     vocal_stlye = np.load(file_path)
     
     vocal_stlye = torch.from_numpy(vocal_stlye).to(device) # [1, 512]

@@ -72,7 +72,7 @@ def decode_audio(latents, vae_model, chunked=False, overlap=32, chunk_size=128):
             y_final[:,:,t_start:t_end] = y_chunk[:,:,chunk_start:chunk_end]
         return y_final
 
-def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative_style_prompt, start_time):
+def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative_style_prompt, start_time, steps):
     # import pdb; pdb.set_trace()
     with torch.inference_mode():
         generated, _ = cfm_model.sample(
