@@ -11,6 +11,7 @@ from typing import List
 from diffrhythm.g2p.g2p.chinese_model_g2p import BertPolyPredict
 from diffrhythm.g2p.utils.front_utils import *
 import os
+from huggingface_hub import hf_hub_download
 
 # from g2pw import G2PWConverter
 
@@ -181,18 +182,17 @@ _bopomofo_to_ipa = [
 ]
 must_not_er_words = {"女儿", "老儿", "男儿", "少儿", "小儿"}
 
+
+chinese_lexicon_path =  hf_hub_download(
+                        repo_id="ASLP-lab/DiffRhythm",
+                        filename="chinese_lexicon.txt"
+                    )
 word_pinyin_dict = {}
-with open(
-    r"./diffrhythm/g2p/sources/chinese_lexicon.txt", "r", encoding="utf-8"
-) as fread:
+with open(chinese_lexicon_path, "r", encoding="utf-8") as fread:
     txt_list = fread.readlines()
-    for i, txt in enumerate(txt_list):
-        try:
-            word, pinyin = txt.strip().split("\t")
-            word_pinyin_dict[word] = pinyin
-        except:
-            print(txt.strip())
-            print(f"************** {i} ****************")
+    for txt in txt_list:
+        word, pinyin = txt.strip().split("\t")
+        word_pinyin_dict[word] = pinyin
     fread.close()
 
 pinyin_2_bopomofo_dict = {}
