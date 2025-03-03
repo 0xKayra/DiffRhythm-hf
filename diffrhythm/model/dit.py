@@ -15,7 +15,7 @@ import torch
 import torch.nn.functional as F
 
 from x_transformers.x_transformers import RotaryEmbedding
-from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+from transformers.models.llama.modeling_llama import LlamaDecoderLayer, LlamaRotaryEmbedding
 from transformers.models.llama import LlamaConfig
 from torch.utils.checkpoint import checkpoint
 
@@ -28,7 +28,8 @@ from diffrhythm.model.modules import (
     precompute_freqs_cis,
     get_pos_embed_indices,
 )
-
+from liger_kernel.transformers import apply_liger_kernel_to_llama
+apply_liger_kernel_to_llama()
 
 # Text embedding
 
@@ -134,9 +135,11 @@ class DiT(nn.Module):
         #)
         llama_config = LlamaConfig(hidden_size=dim, intermediate_size=dim * ff_mult, hidden_act='silu')
         llama_config._attn_implementation = 'sdpa'
+        #llama_config._attn_implementation = ''
         self.transformer_blocks = nn.ModuleList(
             [LlamaDecoderLayer(llama_config, layer_idx=i) for i in range(depth)]
         )
+        self.rotary_emb = LlamaRotaryEmbedding(config=llama_config)
         self.long_skip_connection = nn.Linear(dim * 2, dim, bias=False) if long_skip_connection else None
 
         self.text_fusion_linears = nn.ModuleList(
@@ -157,60 +160,53 @@ class DiT(nn.Module):
         # if use_style_prompt:
         #     self.prompt_rnn = nn.LSTM(64, cond_dim, 1, batch_first=True)
 
+    def forward_timestep_invariant(self, text, seq_len, drop_text, start_time):
+        s_t = self.start_time_embed(start_time)
+        text_embed = self.text_embed(text, seq_len, drop_text=drop_text)
+        text_residuals = []
+        for layer in self.text_fusion_linears:
+            text_residual = layer(text_embed)
+            text_residuals.append(text_residual)
+        return s_t, text_embed, text_residuals
+
 
     def forward(
         self,
         x: float["b n d"],  # nosied input audio  # noqa: F722
+        text_embed: int["b nt"],  # text  # noqa: F722
+        text_residuals,
         cond: float["b n d"],  # masked cond audio  # noqa: F722
-        text: int["b nt"],  # text  # noqa: F722
         time: float["b"] | float[""],  # time step  # noqa: F821 F722
         drop_audio_cond,  # cfg for cond audio
-        drop_text,  # cfg for text
         drop_prompt=False,
         style_prompt=None, # [b d t]
-        style_prompt_lens=None,
-        mask: bool["b n"] | None = None,  # noqa: F722
-        grad_ckpt=False,
         start_time=None,
     ):
         batch, seq_len = x.shape[0], x.shape[1]
         if time.ndim == 0:
             time = time.repeat(batch)
 
-        # t: conditioning time, c: context (text + masked cond audio), x: noised input audio
         t = self.time_embed(time)
-        s_t = self.start_time_embed(start_time)
-        c = t + s_t
-        text_embed = self.text_embed(text, seq_len, drop_text=drop_text)
+        c = t + start_time
 
-        # import pdb; pdb.set_trace()
         if drop_prompt:
             style_prompt = torch.zeros_like(style_prompt)
-        # if self.training:
-        #     packed_style_prompt = torch.nn.utils.rnn.pack_padded_sequence(style_prompt.transpose(1, 2), style_prompt_lens.cpu(), batch_first=True, enforce_sorted=False)
-        # else:
-        #     packed_style_prompt = style_prompt.transpose(1, 2)
-        #print(packed_style_prompt.shape)
-        # _, style_emb = self.prompt_rnn.forward(packed_style_prompt)
-        # _, (h_n, c_n) = self.prompt_rnn.forward(packed_style_prompt)
-        # style_emb = h_n.squeeze(0) # 1, B, dim -> B, dim
         
-        style_emb = style_prompt # [b, 512]
+        style_embed = style_prompt # [b, 512]
 
-        x = self.input_embed(x, cond, text_embed, style_emb, c, drop_audio_cond=drop_audio_cond)
+        x = self.input_embed(x, cond, text_embed, style_embed, c, drop_audio_cond=drop_audio_cond)
 
         if self.long_skip_connection is not None:
             residual = x
 
         pos_ids = torch.arange(x.shape[1], device=x.device)
         pos_ids = pos_ids.unsqueeze(0).repeat(x.shape[0], 1)
+        rotary_embed = self.rotary_emb(x, pos_ids)
+
         for i, block in enumerate(self.transformer_blocks):
-            if not grad_ckpt:
-                x, *_ = block(x, position_ids=pos_ids)
-            else:
-                x, *_ = checkpoint(block, x, position_ids=pos_ids, use_reentrant=False)
+            x, *_ = block(x, position_embeddings=rotary_embed)
             if i < self.depth // 2:
-                x = x + self.text_fusion_linears[i](text_embed)
+                x = x + text_residuals[i]
 
         if self.long_skip_connection is not None:
             x = self.long_skip_connection(torch.cat((x, residual), dim=-1))

@@ -187,7 +187,10 @@ with open(
 ) as fread:
     txt_list = fread.readlines()
     for txt in txt_list:
-        word, pinyin = txt.strip().split("\t")
+        try:
+            word, pinyin = txt.strip().split("\t")
+        except:
+            print(txt.strip())
         word_pinyin_dict[word] = pinyin
     fread.close()
 

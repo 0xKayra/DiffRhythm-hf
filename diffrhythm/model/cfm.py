@@ -193,25 +193,28 @@ class CFM(nn.Module):
         # test for no ref audio
         if no_ref_audio:
             cond = torch.zeros_like(cond)
+        
+        start_time_embed, positive_text_embed, positive_text_residuals = self.transformer.forward_timestep_invariant(text, step_cond.shape[1], drop_text=False, start_time=start_time)
+        _, negative_text_embed, negative_text_residuals = self.transformer.forward_timestep_invariant(text, step_cond.shape[1], drop_text=True, start_time=start_time)
+
+        text_embed = torch.cat([positive_text_embed, negative_text_embed], 0)
+        text_residuals = [torch.cat([a, b], 0) for a, b in zip(positive_text_residuals, negative_text_residuals)]
+        step_cond = torch.cat([step_cond, step_cond], 0)
+        style_prompt = torch.cat([style_prompt, negative_style_prompt], 0)
+        start_time_embed = torch.cat([start_time_embed, start_time_embed], 0)
             
 
         def fn(t, x):
-            # at each step, conditioning is fixed
-            # step_cond = torch.where(cond_mask, cond, torch.zeros_like(cond))
-
-            # predict flow
+            x = torch.cat([x, x], 0)
             pred = self.transformer(
-                x=x, cond=step_cond, text=text, time=t, mask=mask, drop_audio_cond=False, drop_text=False, drop_prompt=False,
-                style_prompt=style_prompt, style_prompt_lens=style_prompt_lens, start_time=start_time
+                x=x, text_embed=text_embed, text_residuals=text_residuals, cond=step_cond, time=t, 
+                drop_audio_cond=True, drop_prompt=False, style_prompt=style_prompt, start_time=start_time_embed
             )
-            if cfg_strength < 1e-5:
-                return pred
 
-            null_pred = self.transformer(
-                x=x, cond=step_cond, text=text, time=t, mask=mask, drop_audio_cond=True, drop_text=True, drop_prompt=False,
-                style_prompt=negative_style_prompt, style_prompt_lens=style_prompt_lens, start_time=start_time
-            )
-            return pred + (pred - null_pred) * cfg_strength
+            positive_pred, negative_pred = pred.chunk(2, 0)
+            cfg_pred = positive_pred + (positive_pred - negative_pred) * cfg_strength
+
+            return cfg_pred
 
         # noise input
         # to make sure batch inference result is same with different batch size, and for sure single inference
