@@ -186,12 +186,13 @@ with open(
     r"./diffrhythm/g2p/sources/chinese_lexicon.txt", "r", encoding="utf-8"
 ) as fread:
     txt_list = fread.readlines()
-    for txt in txt_list:
+    for i, txt in enumerate(txt_list):
         try:
             word, pinyin = txt.strip().split("\t")
+            word_pinyin_dict[word] = pinyin
         except:
             print(txt.strip())
-        word_pinyin_dict[word] = pinyin
+            print(f"************** {i} ****************")
     fread.close()
 
 pinyin_2_bopomofo_dict = {}
