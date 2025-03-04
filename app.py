@@ -125,7 +125,7 @@ css = """
 """
 
 with gr.Blocks(css=css) as demo:
-    gr.Markdown("<h1 style='text-align: center'>DiffRhythm(谛韵)</h1>")
+    gr.Markdown("<h1 style='text-align: center'>DiffRhythm (谛韵)</h1>")
     gr.HTML("""
         <div style="display:flex; justify-content: center; column-gap:4px;">
             <a href="https://github.com/ASLP-lab/DiffRhythm">
@@ -172,7 +172,7 @@ with gr.Blocks(css=css) as demo:
                         elem_classes="lyrics-scroll-box",
                         value="""[00:05.00]Stardust whispers in your eyes\n[00:09.30]Moonlight paints our silhouettes\n[00:13.75]Tides bring secrets from the deep\n[00:18.20]Where forever's breath is kept\n[00:22.90]We dance through constellations' maze\n[00:27.15]Footprints melt in cosmic waves\n[00:31.65]Horizons hum our silent vow\n[00:36.10]Time unravels here and now\n[00:40.85]Eternal embers in the night oh oh oh\n[00:45.25]Healing scars with liquid light\n[00:49.70]Galaxies write our refrain\n[00:54.15]Love reborn in endless rain\n[01:00.00]Interlude\n[01:15.30]Paper boats of memories\n[01:19.75]Float through veins of ancient trees\n[01:24.20]Your laughter spins aurora threads\n[01:28.65]Weaving dawn through featherbed"""    
                     )
-                    audio_prompt = gr.Audio(label="Audio Prompt", type="filepath", value="./gift_of_the_world.wav")
+                    audio_prompt = gr.Audio(label="Audio Prompt", type="filepath", value="./prompt/gift_of_the_world.wav")
                     
                 with gr.Column():
                     steps = gr.Slider(
