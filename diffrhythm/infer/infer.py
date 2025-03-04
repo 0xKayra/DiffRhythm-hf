@@ -90,14 +90,13 @@ def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative
         generated = generated.to(torch.float32)
         latent = generated.transpose(1, 2) # [b d t]
     
-        output = decode_audio(latent, vae_model)
+        output = decode_audio(latent, vae_model, chunked=False)
 
         # Rearrange audio batch to a single sequence
         output = rearrange(output, "b d n -> d (b n)")
-        # Peak normalize, clip, convert to int16, and save to file
-        output = output.to(torch.float32).div(torch.max(torch.abs(output))).clamp(-1, 1).mul(32767).to(torch.int16).cpu()
-        
-        return output
+        output_tensor = output.to(torch.float32).div(torch.max(torch.abs(output))).clamp(-1, 1).cpu()
+        output_np = output_tensor.numpy().T.astype(np.float32)
+        return (44100, output_np)
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
