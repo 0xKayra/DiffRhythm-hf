@@ -125,8 +125,12 @@ css = """
 """
 
 with gr.Blocks(css=css) as demo:
-    gr.Markdown("<h1 style='text-align: center'>DiffRhythm (谛韵)</h1>")
+    # gr.Markdown("<h1 style='text-align: center'>DiffRhythm (谛韵)</h1>")
     gr.HTML("""
+        
+        <div style="font-size: 2em; font-weight: bold; text-align: center; margin-bottom: 5px">
+            DiffRhythm (谛韵)
+        </div>
         <div style="display:flex; justify-content: center; column-gap:4px;">
             <a href="https://arxiv.org/abs/2503.01183">
                 <img src='https://img.shields.io/badge/Arxiv-Paper-blue'>
