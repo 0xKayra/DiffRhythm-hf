@@ -91,7 +91,7 @@ def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative
             start_time=start_time
         )
         
-        generated = generated.to(torch.float32)
+        # generated = generated.to(torch.float32)
         latent = generated.transpose(1, 2) # [b d t]
         e_t = time.time()
         print(f"**** cfm time : {e_t-s_t} ****")
