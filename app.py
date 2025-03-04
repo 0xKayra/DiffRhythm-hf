@@ -51,7 +51,7 @@ def infer_music(lrc, ref_audio_path, steps, max_frames=2048, device='cuda'):
 
 def R1_infer1(theme, tags_gen, language):
     try:
-        client = OpenAI(api_key="3581722f-9abc-49cf-9792-fa962cad9c4f", base_url = "https://ark.cn-beijing.volces.com/api/v3")
+        client = OpenAI(api_key=os.getenv('DP_API'), base_url="https://api.deepseek.com")
 
         llm_prompt = """
         请围绕"{theme}"主题生成一首符合"{tags}"风格的完整歌词。生成的{language}语言的歌词。
@@ -66,7 +66,7 @@ def R1_infer1(theme, tags_gen, language):
         """
 
         response = client.chat.completions.create(
-            model="ep-20250215195652-lrff7",
+            model='deepseek-reasoner',
             messages=[
                 {"role": "system", "content": "You are a professional musician who has been invited to make music-related comments."},
                 {"role": "user", "content": llm_prompt.format(theme=theme, tags=tags_gen, language=language)},
@@ -85,14 +85,14 @@ def R1_infer1(theme, tags_gen, language):
 
 
 def R1_infer2(tags_lyrics, lyrics_input):
-    client = OpenAI(api_key="3581722f-9abc-49cf-9792-fa962cad9c4f", base_url = "https://ark.cn-beijing.volces.com/api/v3")
+    client = OpenAI(api_key=os.getenv('DP_API'), base_url="https://api.deepseek.com")
 
     llm_prompt = """
     {lyrics_input}这是一首歌的歌词,每一行是一句歌词,{tags_lyrics}是我希望这首歌的风格，我现在想要给这首歌的每一句歌词打时间戳得到LRC，我希望时间戳分配应根据歌曲的标签、歌词的情感、节奏来合理推测，而非机械地按照歌词长度分配。第一句歌词的时间戳应考虑前奏长度，避免歌词从 `[00:00.00]` 直接开始。严格按照 LRC 格式输出歌词，每行格式为 `[mm:ss.xx]歌词内容`。最后的结果只输出LRC,不需要其他的解释。
     """
 
     response = client.chat.completions.create(
-        model="ep-20250215195652-lrff7",
+        model='deepseek-reasoner',
         messages=[
             {"role": "system", "content": "You are a professional musician who has been invited to make music-related comments."},
             {"role": "user", "content": llm_prompt.format(lyrics_input=lyrics_input, tags_lyrics=tags_lyrics)},
@@ -191,9 +191,9 @@ with gr.Blocks(css=css) as demo:
 
             gr.Examples(
                 examples=[
-                    ["./gift_of_the_world.wav"], 
-                    ["./most_beautiful_expectation.wav"],
-                    ["./ltwyl.wav"]
+                    ["./prompt/gift_of_the_world.wav"], 
+                    ["./prompt/most_beautiful_expectation.wav"],
+                    ["./prompt/ltwyl.wav"]
                 ],
                 inputs=[audio_prompt],  
                 label="Audio Examples",
