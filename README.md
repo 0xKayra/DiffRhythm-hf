@@ -1,6 +1,6 @@
 ---
 title: DiffRhythm
-emoji: 🐢
+emoji: 🎶
 colorFrom: green
 colorTo: purple
 sdk: gradio

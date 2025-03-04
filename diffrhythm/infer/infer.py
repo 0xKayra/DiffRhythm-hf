@@ -74,9 +74,8 @@ def decode_audio(latents, vae_model, chunked=False, overlap=32, chunk_size=128):
             y_final[:,:,t_start:t_end] = y_chunk[:,:,chunk_start:chunk_end]
         return y_final
 
-def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative_style_prompt, steps, sway_sampling_coef, start_time):
-    # import pdb; pdb.set_trace()
-    s_t = time.time()
+def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative_style_prompt, steps, sway_sampling_coef, start_time, file_type):
+
     with torch.inference_mode():
         generated, _ = cfm_model.sample(
             cond=cond,
@@ -92,28 +91,24 @@ def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative
         
         generated = generated.to(torch.float32)
         latent = generated.transpose(1, 2) # [b d t]
-        e_t = time.time()
-        print(f"**** cfm time : {e_t-s_t} ****")
-        print(latent.mean(), latent.min(), latent.max(), latent.std())
         output = decode_audio(latent, vae_model, chunked=False)
-        print(output.mean(), output.min(), output.max(), output.std())
 
         # Rearrange audio batch to a single sequence
         output = rearrange(output, "b d n -> d (b n)")
         output_tensor = output.to(torch.float32).div(torch.max(torch.abs(output))).clamp(-1, 1).cpu()
         output_np = output_tensor.numpy().T.astype(np.float32)
-        print(f"**** vae time : {time.time()-e_t} ****")
-        e_t = time.time()
-        print(output_np.mean(), output_np.min(), output_np.max(), output_np.std())
-        # return (44100, output_np)
-    
-        buffer = io.BytesIO()
-
-        output_np = np.int16(output_np * 2**15)
-        song = pydub.AudioSegment(output_np.tobytes(), frame_rate=44100, sample_width=2, channels=2)
-        song.export(buffer, format="mp3", bitrate="320k")
-        print(f"**** buffer time : {time.time()-e_t} ****")
-        return buffer.getvalue()
+        
+        if file_type == 'wav':
+            return (44100, output_np)
+        else:
+            buffer = io.BytesIO()
+            output_np = np.int16(output_np * 2**15)
+            song = pydub.AudioSegment(output_np.tobytes(), frame_rate=44100, sample_width=2, channels=2)
+            if file_type == 'mp3':
+                song.export(buffer, format="mp3", bitrate="320k")
+            else:
+                song.export(buffer, format="ogg", bitrate="320k")
+            return buffer.getvalue()
     
         
 if __name__ == "__main__":

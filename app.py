@@ -29,7 +29,7 @@ cfm, tokenizer, muq, vae = prepare_model(device)
 cfm = torch.compile(cfm)
 
 @spaces.GPU
-def infer_music(lrc, ref_audio_path, steps, max_frames=2048, device='cuda'):
+def infer_music(lrc, ref_audio_path, steps, file_type, max_frames=2048, device='cuda'):
 
     sway_sampling_coef = -1 if steps < 32 else None
     lrc_prompt, start_time = get_lrc_token(lrc, tokenizer, device)
@@ -45,7 +45,8 @@ def infer_music(lrc, ref_audio_path, steps, max_frames=2048, device='cuda'):
                                negative_style_prompt=negative_style_prompt,
                                steps=steps,
                                sway_sampling_coef=sway_sampling_coef,
-                               start_time=start_time
+                               start_time=start_time,
+                               file_type=file_type
                                )
     return generated_song
 
@@ -174,12 +175,16 @@ with gr.Blocks(css=css) as demo:
                         lines=12,
                         max_lines=50,
                         elem_classes="lyrics-scroll-box",
-                        value="""[00:05.00]Stardust whispers in your eyes\n[00:09.30]Moonlight paints our silhouettes\n[00:13.75]Tides bring secrets from the deep\n[00:18.20]Where forever's breath is kept\n[00:22.90]We dance through constellations' maze\n[00:27.15]Footprints melt in cosmic waves\n[00:31.65]Horizons hum our silent vow\n[00:36.10]Time unravels here and now\n[00:40.85]Eternal embers in the night oh oh oh\n[00:45.25]Healing scars with liquid light\n[00:49.70]Galaxies write our refrain\n[00:54.15]Love reborn in endless rain\n[01:00.00]Interlude\n[01:15.30]Paper boats of memories\n[01:19.75]Float through veins of ancient trees\n[01:24.20]Your laughter spins aurora threads\n[01:28.65]Weaving dawn through featherbed"""    
+                        value="""[00:10.00]Moonlight spills through broken blinds\n[00:13.20]Your shadow dances on the dashboard shrine\n[00:16.85]Neon ghosts in gasoline rain\n[00:20.40]I hear your laughter down the midnight train\n[00:24.15]Static whispers through frayed wires\n[00:27.65]Guitar strings hum our cathedral choirs\n[00:31.30]Flicker screens show reruns of June\n[00:34.90]I'm drowning in this mercury lagoon\n[00:38.55]Electric veins pulse through concrete skies\n[00:42.10]Your name echoes in the hollow where my heartbeat lies\n[00:45.75]We're satellites trapped in parallel light\n[00:49.25]Burning through the atmosphere of endless night\n[01:00.00]Dusty vinyl spins reverse\n[01:03.45]Our polaroid timeline bleeds through the verse\n[01:07.10]Telescope aimed at dead stars\n[01:10.65]Still tracing constellations through prison bars\n[01:14.30]Electric veins pulse through concrete skies\n[01:17.85]Your name echoes in the hollow where my heartbeat lies\n[01:21.50]We're satellites trapped in parallel light\n[01:25.05]Burning through the atmosphere of endless night\n[02:10.00]Clockwork gears grind moonbeams to rust\n[02:13.50]Our fingerprint smudged by interstellar dust\n[02:17.15]Velvet thunder rolls through my veins\n[02:20.70]Chasing phantom trains through solar plane\n[02:24.35]Electric veins pulse through concrete skies\n[02:27.90]Your name echoes in the hollow where my heartbeat lies"""    
                     )
-                    audio_prompt = gr.Audio(label="Audio Prompt", type="filepath", value="./prompt/gift_of_the_world.wav")
+                    audio_prompt = gr.Audio(label="Audio Prompt", type="filepath", value="./src/prompt/default.wav")
                     
                 with gr.Column():
-                    steps = gr.Slider(
+                    
+                    lyrics_btn = gr.Button("Submit", variant="primary")
+                    audio_output = gr.Audio(label="Audio Result", type="filepath", elem_id="audio_output")
+                    with gr.Accordion("Advanced Settings", open=False):
+                        steps = gr.Slider(
                                     minimum=10,
                                     maximum=100,
                                     value=32, 
@@ -188,16 +193,23 @@ with gr.Blocks(css=css) as demo:
                                     interactive=True,
                                     elem_id="step_slider"
                                 )
-                    lyrics_btn = gr.Button("Submit", variant="primary")
-                    audio_output = gr.Audio(label="Audio Result", type="filepath", elem_id="audio_output")
+                        file_type = gr.Dropdown(["wav", "mp3", "ogg"], label="Music File Type", value="wav")
                     
 
 
             gr.Examples(
                 examples=[
-                    ["./prompt/gift_of_the_world.wav"], 
-                    ["./prompt/most_beautiful_expectation.wav"],
-                    ["./prompt/ltwyl.wav"]
+                    ["./src/prompt/pop_cn.wav"], 
+                    ["./src/prompt/pop_en.wav"], 
+                    ["./src/prompt/rock_cn.wav"], 
+                    ["./src/prompt/rock_en.wav"], 
+                    ["./src/prompt/country_cn.wav"], 
+                    ["./src/prompt/country_en.wav"],
+                    ["./src/prompt/classic_cn.wav"],
+                    ["./src/prompt/classic_en.wav"],
+                    ["./src/prompt/jazz_cn.wav"],
+                    ["./src/prompt/jazz_en.wav"],
+                    ["./src/prompt/default.wav"]
                 ],
                 inputs=[audio_prompt],  
                 label="Audio Examples",
@@ -207,9 +219,10 @@ with gr.Blocks(css=css) as demo:
 
             gr.Examples(
                 examples=[
-                    ["""[00:05.00]Stardust whispers in your eyes\n[00:09.30]Moonlight paints our silhouettes\n[00:13.75]Tides bring secrets from the deep\n[00:18.20]Where forever's breath is kept\n[00:22.90]We dance through constellations' maze\n[00:27.15]Footprints melt in cosmic waves\n[00:31.65]Horizons hum our silent vow\n[00:36.10]Time unravels here and now\n[00:40.85]Eternal embers in the night oh oh oh\n[00:45.25]Healing scars with liquid light\n[00:49.70]Galaxies write our refrain\n[00:54.15]Love reborn in endless rain\n[01:00.00]Interlude\n[01:15.30]Paper boats of memories\n[01:19.75]Float through veins of ancient trees\n[01:24.20]Your laughter spins aurora threads\n[01:28.65]Weaving dawn through featherbed"""],
-                    ["""[00:10.00]Moonlight spills through broken blinds\n[00:13.20]Your shadow dances on the dashboard shrine\n[00:16.85]Neon ghosts in gasoline rain\n[00:20.40]I hear your laughter down the midnight train\n[00:24.15]Static whispers through frayed wires\n[00:27.65]Guitar strings hum our cathedral choirs\n[00:31.30]Flicker screens show reruns of June\n[00:34.90]I'm drowning in this mercury lagoon\n[00:38.55]Electric veins pulse through concrete skies\n[00:42.10]Your name echoes in the hollow where my heartbeat lies\n[00:45.75]We're satellites trapped in parallel light\n[00:49.25]Burning through the atmosphere of endless night\n[01:00.00]Dusty vinyl spins reverse\n[01:03.45]Our polaroid timeline bleeds through the verse\n[01:07.10]Telescope aimed at dead stars\n[01:10.65]Still tracing constellations through prison bars\n[01:14.30]Electric veins pulse through concrete skies\n[01:17.85]Your name echoes in the hollow where my heartbeat lies\n[01:21.50]We're satellites trapped in parallel light\n[01:25.05]Burning through the atmosphere of endless night\n[02:10.00]Clockwork gears grind moonbeams to rust\n[02:13.50]Our fingerprint smudged by interstellar dust\n[02:17.15]Velvet thunder rolls through my veins\n[02:20.70]Chasing phantom trains through solar plane\n[02:24.35]Electric veins pulse through concrete skies\n[02:27.90]Your name echoes in the hollow where my heartbeat lies"""]
+                    ["""[00:10.00]Moonlight spills through broken blinds\n[00:13.20]Your shadow dances on the dashboard shrine\n[00:16.85]Neon ghosts in gasoline rain\n[00:20.40]I hear your laughter down the midnight train\n[00:24.15]Static whispers through frayed wires\n[00:27.65]Guitar strings hum our cathedral choirs\n[00:31.30]Flicker screens show reruns of June\n[00:34.90]I'm drowning in this mercury lagoon\n[00:38.55]Electric veins pulse through concrete skies\n[00:42.10]Your name echoes in the hollow where my heartbeat lies\n[00:45.75]We're satellites trapped in parallel light\n[00:49.25]Burning through the atmosphere of endless night\n[01:00.00]Dusty vinyl spins reverse\n[01:03.45]Our polaroid timeline bleeds through the verse\n[01:07.10]Telescope aimed at dead stars\n[01:10.65]Still tracing constellations through prison bars\n[01:14.30]Electric veins pulse through concrete skies\n[01:17.85]Your name echoes in the hollow where my heartbeat lies\n[01:21.50]We're satellites trapped in parallel light\n[01:25.05]Burning through the atmosphere of endless night\n[02:10.00]Clockwork gears grind moonbeams to rust\n[02:13.50]Our fingerprint smudged by interstellar dust\n[02:17.15]Velvet thunder rolls through my veins\n[02:20.70]Chasing phantom trains through solar plane\n[02:24.35]Electric veins pulse through concrete skies\n[02:27.90]Your name echoes in the hollow where my heartbeat lies"""],
+                    ["""[00:04.34]Tell me that I'm special\n[00:06.57]Tell me I look pretty\n[00:08.46]Tell me I'm a little angel\n[00:10.58]Sweetheart of your city\n[00:13.64]Say what I'm dying to hear\n[00:17.35]Cause I'm dying to hear you\n[00:20.86]Tell me I'm that new thing\n[00:22.93]Tell me that I'm relevant\n[00:24.96]Tell me that I got a big heart\n[00:27.04]Then back it up with evidence\n[00:29.94]I need it and I don't know why\n[00:34.28]This late at night\n[00:36.32]Isn't it lonely\n[00:39.24]I'd do anything to make you want me\n[00:43.40]I'd give it all up if you told me\n[00:47.42]That I'd be\n[00:49.43]The number one girl in your eyes\n[00:52.85]Your one and only\n[00:55.74]So what's it gon' take for you to want me\n[00:59.78]I'd give it all up if you told me\n[01:03.89]That I'd be\n[01:05.94]The number one girl in your eyes\n[01:11.34]Tell me I'm going real big places\n[01:14.32]Down to earth so friendly\n[01:16.30]And even through all the phases\n[01:18.46]Tell me you accept me\n[01:21.56]Well that's all I'm dying to hear\n[01:25.30]Yeah I'm dying to hear you\n[01:28.91]Tell me that you need me\n[01:30.85]Tell me that I'm loved\n[01:32.90]Tell me that I'm worth it"""]
                 ],
+                
                 inputs=[lrc],
                 label="Lrc Examples",
                 examples_per_page=2,
@@ -227,7 +240,6 @@ with gr.Blocks(css=css) as demo:
                         gr.Markdown("### Method 1: Generate from Theme")
                         theme = gr.Textbox(label="theme", placeholder="Enter song theme, e.g. Love and Heartbreak")
                         tags_gen = gr.Textbox(label="tags", placeholder="Example: male pop confidence healing")
-                        # language = gr.Dropdown(["zh", "en"], label="language", value="en")
                         language = gr.Radio(["zh", "en"], label="Language", value="en")
                         gen_from_theme_btn = gr.Button("Generate LRC (From Theme)", variant="primary")
                         
@@ -307,7 +319,7 @@ with gr.Blocks(css=css) as demo:
     
     lyrics_btn.click(
         fn=infer_music,
-        inputs=[lrc, audio_prompt, steps],
+        inputs=[lrc, audio_prompt, steps, file_type],
         outputs=audio_output
     )
 

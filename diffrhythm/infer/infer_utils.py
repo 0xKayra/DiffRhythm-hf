@@ -43,7 +43,7 @@ def get_reference_latent(device, max_frames):
     return torch.zeros(1, max_frames, 64).to(device)
 
 def get_negative_style_prompt(device):
-    file_path = "./prompt/negative_prompt.npy"
+    file_path = "./src/negative_prompt.npy"
     vocal_stlye = np.load(file_path)
     
     vocal_stlye = torch.from_numpy(vocal_stlye).to(device) # [1, 512]
