@@ -34,10 +34,10 @@ def prepare_model(device):
     
     # prepare vae
     vae_ckpt_path = hf_hub_download(repo_id="ASLP-lab/DiffRhythm-vae", filename="vae_model.pt")
-    vae = torch.jit.load(vae_ckpt_path).to(device)
+    vae = torch.jit.load(vae_ckpt_path, map_location='cpu').to(device)
     print("********* vae.parameters()  ", next(vae.parameters()).dtype)
     vae = vae.half()
-    print("********* vae half .parameters()  ", next(vae.parameters()).dtype)
+    print("********* vae half parameters()  ", next(vae.parameters()).dtype)
     return cfm, tokenizer, muq, vae
     
 
