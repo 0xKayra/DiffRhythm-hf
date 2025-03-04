@@ -8,6 +8,7 @@ from tqdm import tqdm
 import random
 import numpy as np
 import time
+import spaces
 
 from diffrhythm.infer.infer_utils import (
     get_reference_latent,
@@ -17,6 +18,7 @@ from diffrhythm.infer.infer_utils import (
     get_negative_style_prompt
 )
 
+@spaces.GPU
 def decode_audio(latents, vae_model, chunked=False, overlap=32, chunk_size=128):
     downsampling_ratio = 2048
     io_channels = 2
@@ -72,6 +74,7 @@ def decode_audio(latents, vae_model, chunked=False, overlap=32, chunk_size=128):
             y_final[:,:,t_start:t_end] = y_chunk[:,:,chunk_start:chunk_end]
         return y_final
 
+@spaces.GPU
 def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative_style_prompt, steps, sway_sampling_coef, start_time):
     # import pdb; pdb.set_trace()
     s_t = time.time()
@@ -100,7 +103,7 @@ def inference(cfm_model, vae_model, cond, text, duration, style_prompt, negative
         output = rearrange(output, "b d n -> d (b n)")
         output_tensor = output.to(torch.float32).div(torch.max(torch.abs(output))).clamp(-1, 1).cpu()
         output_np = output_tensor.numpy().T.astype(np.float32)
-        print(f"**** vae time : {time.tiem()-e_t} ****")
+        print(f"**** vae time : {time.time()-e_t} ****")
         print(output_np.mean(), output_np.min(), output_np.max(), output_np.std())
         return (44100, output_np)
         
