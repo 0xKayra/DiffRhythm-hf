@@ -54,14 +54,14 @@ def R1_infer1(theme, tags_gen, language):
         client = OpenAI(api_key=os.getenv('HS_DP_API'), base_url = "https://ark.cn-beijing.volces.com/api/v3")
 
         llm_prompt = """
-        请围绕"{theme}"主题生成一首符合"{tags}"风格的完整歌词。生成的{language}语言的歌词。
+        请围绕"{theme}"主题生成一首符合"{tags}"风格的语言为{language}的完整歌词。同时我希望你生成的歌词严格符合下述要求：
         ### **歌曲结构要求**
         1. 歌词应富有变化，使情绪递进，整体连贯有层次感。**每行歌词长度应自然变化**，切勿长度一致，导致很格式化。
-        2. **时间戳分配应根据歌曲的标签\歌词的情感、节奏来合理推测**，而非机械地按照歌词长度分配。 
+        2. **时间戳分配应根据歌曲的标签、歌词的情感、节奏来合理推测**，而非机械地按照歌词长度分配。 
         ### **歌曲内容要求**
         1. **第一句歌词的时间戳应考虑前奏长度**，避免歌词从 `[00:00.00]` 直接开始。
         2. **严格按照 LRC 格式输出歌词**，每行格式为 `[mm:ss.xx]歌词内容`。
-        3. 输出的歌词不能有空行、括号，不能有其他解释内容，例如：副歌、桥段、结尾。  
+        3. 输出的歌词不能有空行、括号，严禁出现除了时间戳和歌词以外的内容，例如：副歌、桥段、结尾等段落注释。  
         4. 输出必须是**纯净的 LRC**。
         """
 
@@ -156,8 +156,8 @@ with gr.Blocks(css=css) as demo:
                         - Each line must follow: `[mm:ss.xx]Lyric content`
                         - Example of valid format:
                             ``` 
-                            [00:07.23]Fight me fight me fight me
-                            [00:08.73]You made me so unlike me
+                            [00:10.00]Moonlight spills through broken blinds
+                            [00:13.20]Your shadow dances on the dashboard shrine
                             ```
 
                         2. **Generation Duration Limits**
