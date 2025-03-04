@@ -55,15 +55,22 @@ def R1_infer1(theme, tags_gen, language):
         client = OpenAI(api_key=os.getenv('HS_DP_API'), base_url = "https://ark.cn-beijing.volces.com/api/v3")
 
         llm_prompt = """
-        请围绕"{theme}"主题生成一首符合"{tags}"风格的语言为{language}的完整歌词。同时我希望你生成的歌词严格符合下述要求：
-        ### **歌曲结构要求**
+        请围绕"{theme}"主题生成一首符合"{tags}"风格的语言为{language}的完整歌词。严格遵循以下要求：
+
+        ### **强制格式规则**
+        1. **仅输出时间戳和歌词**，禁止任何括号、旁白、段落标记（如副歌、间奏、尾奏等注释）。
+        2. 每行格式必须为 `[mm:ss.xx]歌词内容`，时间戳与歌词间无空格，歌词内容需完整连贯。
+        3. 时间戳需自然分布，**第一句歌词起始时间不得为 [00:00.00]**，需考虑前奏空白。
+
+        ### **内容与结构要求**
         1. 歌词应富有变化，使情绪递进，整体连贯有层次感。**每行歌词长度应自然变化**，切勿长度一致，导致很格式化。
-        2. **时间戳分配应根据歌曲的标签、歌词的情感、节奏来合理推测**，而非机械地按照歌词长度分配。 
-        ### **歌曲内容要求**
-        1. **第一句歌词的时间戳应考虑前奏长度**，避免歌词从 `[00:00.00]` 直接开始。
-        2. **严格按照 LRC 格式输出歌词**，每行格式为 `[mm:ss.xx]歌词内容`。
-        3. 输出的歌词不能有空行、括号，严禁出现除了时间戳和歌词以外的内容，例如：副歌、桥段、结尾等段落注释。  
-        4. 输出必须是**纯净的 LRC**。
+        2. **时间戳分配应根据歌曲的标签、歌词的情感、节奏来合理推测**，而非机械地按照歌词长度分配。
+        3. 间奏/尾奏仅通过时间空白体现（如从 [02:30.00] 直接跳至 [02:50.00]），**无需文字描述**。
+
+        ### **负面示例（禁止出现）**
+        - 错误：[01:30.00](钢琴间奏)
+        - 错误：[02:00.00][副歌]
+        - 错误：空行、换行符、注释
         """
 
         response = client.chat.completions.create(
@@ -193,7 +200,7 @@ with gr.Blocks(css=css) as demo:
                                     interactive=True,
                                     elem_id="step_slider"
                                 )
-                        file_type = gr.Dropdown(["wav", "mp3", "ogg"], label="Music File Type", value="wav")
+                        file_type = gr.Dropdown(["wav", "mp3", "ogg"], label="Output Format", value="wav")
                     
 
 
@@ -213,7 +220,7 @@ with gr.Blocks(css=css) as demo:
                 ],
                 inputs=[audio_prompt],  
                 label="Audio Examples",
-                examples_per_page=3,
+                examples_per_page=11,
                 elem_id="audio-examples-container" 
             )
 
