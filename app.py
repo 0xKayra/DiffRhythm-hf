@@ -135,16 +135,12 @@ css = """
 }
 
 """
-def image_to_base64(image_path):
-    with open(image_path, "rb") as f:
-        return f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
-
 
 with gr.Blocks(css=css) as demo:
     # gr.Markdown("<h1 style='text-align: center'>DiffRhythm (谛韵)</h1>")
     gr.HTML(f"""
             <div style="display: flex; align-items: center;">
-                <img src='{image_to_base64("./src/DiffRhythm.jpg")}' 
+                <img src='https://raw.githubusercontent.com/ASLP-lab/DiffRhythm/refs/heads/main/src/DiffRhythm_logo.jpg' 
                     style='width: 200px; height: 40%; display: block; margin: 0 auto 20px;'>
             </div>
 
