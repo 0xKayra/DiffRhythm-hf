@@ -136,14 +136,9 @@ css = """
 
 """
 
-with gr.Blocks(css=css) as demo:
-    # gr.Markdown("<h1 style='text-align: center'>DiffRhythm (谛韵)</h1>")
-    gr.HTML(f"""
-            <div style="display: flex; align-items: center;">
-                <img src='https://raw.githubusercontent.com/ASLP-lab/DiffRhythm/refs/heads/main/src/DiffRhythm_logo.jpg' 
-                    style='width: 200px; height: 40%; display: block; margin: 0 auto 20px;'>
-            </div>
 
+with gr.Blocks(css=css) as demo:
+    gr.HTML(f"""
             <div style="flex: 1; text-align: center;">
                 <div style="font-size: 2em; font-weight: bold; text-align: center; margin-bottom: 5px">
                     Di♪♪Rhythm (谛韵)
