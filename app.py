@@ -14,6 +14,7 @@ from tqdm import tqdm
 import random
 import numpy as np
 import sys
+import base64
 from diffrhythm.infer.infer_utils import (
     get_reference_latent,
     get_lrc_token,
@@ -23,14 +24,17 @@ from diffrhythm.infer.infer_utils import (
 )
 from diffrhythm.infer.infer import inference
 
-
+MAX_SEED = np.iinfo(np.int32).max
 device='cuda'
 cfm, tokenizer, muq, vae = prepare_model(device)
 cfm = torch.compile(cfm)
 
 @spaces.GPU
-def infer_music(lrc, ref_audio_path, steps, file_type, max_frames=2048, device='cuda'):
+def infer_music(lrc, ref_audio_path, seed=42, randomize_seed=False, steps=32, file_type='wav', max_frames=2048, device='cuda'):
 
+    if randomize_seed:
+        seed = random.randint(0, MAX_SEED)
+    torch.manual_seed(seed)
     sway_sampling_coef = -1 if steps < 32 else None
     lrc_prompt, start_time = get_lrc_token(lrc, tokenizer, device)
     style_prompt = get_style_prompt(muq, ref_audio_path)
@@ -115,7 +119,7 @@ def R1_infer2(tags_lyrics, lyrics_input):
 css = """
 /* 固定文本域高度并强制滚动条 */
 .lyrics-scroll-box textarea {
-    height: 300px !important;  /* 固定高度 */
+    height: 405px !important;  /* 固定高度 */
     max-height: 500px !important;  /* 最大高度 */
     overflow-y: auto !important;  /* 垂直滚动 */
     white-space: pre-wrap;  /* 保留换行 */
@@ -131,26 +135,36 @@ css = """
 }
 
 """
+def image_to_base64(image_path):
+    with open(image_path, "rb") as f:
+        return f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+
 
 with gr.Blocks(css=css) as demo:
     # gr.Markdown("<h1 style='text-align: center'>DiffRhythm (谛韵)</h1>")
-    gr.HTML("""
-        
-        <div style="font-size: 2em; font-weight: bold; text-align: center; margin-bottom: 5px">
-            DiffRhythm (谛韵)
-        </div>
-        <div style="display:flex; justify-content: center; column-gap:4px;">
-            <a href="https://arxiv.org/abs/2503.01183">
-                <img src='https://img.shields.io/badge/Arxiv-Paper-blue'>
-            </a> 
-            <a href="https://github.com/ASLP-lab/DiffRhythm">
-                <img src='https://img.shields.io/badge/GitHub-Repo-green'>
-            </a> 
-            <a href="https://aslp-lab.github.io/DiffRhythm.github.io/">
-                <img src='https://img.shields.io/badge/Project-Page-brown'>
-            </a>
-        </div>
-        """)
+    gr.HTML(f"""
+            <div style="display: flex; align-items: center;">
+                <img src='{image_to_base64("./src/DiffRhythm.jpg")}' 
+                    style='width: 200px; height: 40%; display: block; margin: 0 auto 20px;'>
+            </div>
+
+            <div style="flex: 1; text-align: center;">
+                <div style="font-size: 2em; font-weight: bold; text-align: center; margin-bottom: 5px">
+                    Di♪♪Rhythm (谛韵)
+                </div>
+                <div style="display:flex; justify-content: center; column-gap:4px;">
+                    <a href="https://arxiv.org/abs/2503.01183">
+                        <img src='https://img.shields.io/badge/Arxiv-Paper-blue'>
+                    </a> 
+                    <a href="https://github.com/ASLP-lab/DiffRhythm">
+                        <img src='https://img.shields.io/badge/GitHub-Repo-green'>
+                    </a> 
+                    <a href="https://aslp-lab.github.io/DiffRhythm.github.io/">
+                        <img src='https://img.shields.io/badge/Project-Page-brown'>
+                    </a>
+                </div>
+            </div> 
+            """)
     
     with gr.Tabs() as tabs:
         
@@ -158,7 +172,18 @@ with gr.Blocks(css=css) as demo:
         with gr.Tab("Music Generate", id=0):
             with gr.Row():
                 with gr.Column():
-                    with gr.Accordion("Best Practices Guide", open=False):
+                    lrc = gr.Textbox(
+                        label="Lrc",
+                        placeholder="Input the full lyrics",
+                        lines=12,
+                        max_lines=50,
+                        elem_classes="lyrics-scroll-box",
+                        value="""[00:10.00]Moonlight spills through broken blinds\n[00:13.20]Your shadow dances on the dashboard shrine\n[00:16.85]Neon ghosts in gasoline rain\n[00:20.40]I hear your laughter down the midnight train\n[00:24.15]Static whispers through frayed wires\n[00:27.65]Guitar strings hum our cathedral choirs\n[00:31.30]Flicker screens show reruns of June\n[00:34.90]I'm drowning in this mercury lagoon\n[00:38.55]Electric veins pulse through concrete skies\n[00:42.10]Your name echoes in the hollow where my heartbeat lies\n[00:45.75]We're satellites trapped in parallel light\n[00:49.25]Burning through the atmosphere of endless night\n[01:00.00]Dusty vinyl spins reverse\n[01:03.45]Our polaroid timeline bleeds through the verse\n[01:07.10]Telescope aimed at dead stars\n[01:10.65]Still tracing constellations through prison bars\n[01:14.30]Electric veins pulse through concrete skies\n[01:17.85]Your name echoes in the hollow where my heartbeat lies\n[01:21.50]We're satellites trapped in parallel light\n[01:25.05]Burning through the atmosphere of endless night\n[02:10.00]Clockwork gears grind moonbeams to rust\n[02:13.50]Our fingerprint smudged by interstellar dust\n[02:17.15]Velvet thunder rolls through my veins\n[02:20.70]Chasing phantom trains through solar plane\n[02:24.35]Electric veins pulse through concrete skies\n[02:27.90]Your name echoes in the hollow where my heartbeat lies"""    
+                    )
+                    audio_prompt = gr.Audio(label="Audio Prompt", type="filepath", value="./src/prompt/default.wav")
+                    
+                with gr.Column():
+                    with gr.Accordion("Best Practices Guide", open=True):
                         gr.Markdown("""
                         1. **Lyrics Format Requirements**
                         - Each line must follow: `[mm:ss.xx]Lyric content`
@@ -173,24 +198,27 @@ with gr.Blocks(css=css) as demo:
                         - Total timestamps should not exceed 01:35.00 (95 seconds)
 
                         3. **Audio Prompt Requirements**
-                        - Reference audio should be ≥10 seconds for optimal results
+                        - Reference audio should be ≥ 1 second, audio >10 seconds will be randomly clipped into 10 seconds
+                        - For optimal results, the 10-second clips should be carefully selected
                         - Shorter clips may lead to incoherent generation
+                        
+                        4. **Supported Languages**
+                        - Chinese and English
+                        - More languages comming soon
                         """)
-                    lrc = gr.Textbox(
-                        label="Lrc",
-                        placeholder="Input the full lyrics",
-                        lines=12,
-                        max_lines=50,
-                        elem_classes="lyrics-scroll-box",
-                        value="""[00:10.00]Moonlight spills through broken blinds\n[00:13.20]Your shadow dances on the dashboard shrine\n[00:16.85]Neon ghosts in gasoline rain\n[00:20.40]I hear your laughter down the midnight train\n[00:24.15]Static whispers through frayed wires\n[00:27.65]Guitar strings hum our cathedral choirs\n[00:31.30]Flicker screens show reruns of June\n[00:34.90]I'm drowning in this mercury lagoon\n[00:38.55]Electric veins pulse through concrete skies\n[00:42.10]Your name echoes in the hollow where my heartbeat lies\n[00:45.75]We're satellites trapped in parallel light\n[00:49.25]Burning through the atmosphere of endless night\n[01:00.00]Dusty vinyl spins reverse\n[01:03.45]Our polaroid timeline bleeds through the verse\n[01:07.10]Telescope aimed at dead stars\n[01:10.65]Still tracing constellations through prison bars\n[01:14.30]Electric veins pulse through concrete skies\n[01:17.85]Your name echoes in the hollow where my heartbeat lies\n[01:21.50]We're satellites trapped in parallel light\n[01:25.05]Burning through the atmosphere of endless night\n[02:10.00]Clockwork gears grind moonbeams to rust\n[02:13.50]Our fingerprint smudged by interstellar dust\n[02:17.15]Velvet thunder rolls through my veins\n[02:20.70]Chasing phantom trains through solar plane\n[02:24.35]Electric veins pulse through concrete skies\n[02:27.90]Your name echoes in the hollow where my heartbeat lies"""    
-                    )
-                    audio_prompt = gr.Audio(label="Audio Prompt", type="filepath", value="./src/prompt/default.wav")
                     
-                with gr.Column():
-                    
-                    lyrics_btn = gr.Button("Submit", variant="primary")
+                    lyrics_btn = gr.Button("Generate", variant="primary")
                     audio_output = gr.Audio(label="Audio Result", type="filepath", elem_id="audio_output")
                     with gr.Accordion("Advanced Settings", open=False):
+                        seed = gr.Slider(
+                            label="Seed",
+                            minimum=0,
+                            maximum=MAX_SEED,
+                            step=1,
+                            value=0,
+                        )
+                        randomize_seed = gr.Checkbox(label="Randomize seed", value=True)
+                        
                         steps = gr.Slider(
                                     minimum=10,
                                     maximum=100,
@@ -201,7 +229,6 @@ with gr.Blocks(css=css) as demo:
                                     elem_id="step_slider"
                                 )
                         file_type = gr.Dropdown(["wav", "mp3", "ogg"], label="Output Format", value="wav")
-                    
 
 
             gr.Examples(
@@ -245,8 +272,8 @@ with gr.Blocks(css=css) as demo:
                     
                     with gr.Group():
                         gr.Markdown("### Method 1: Generate from Theme")
-                        theme = gr.Textbox(label="theme", placeholder="Enter song theme, e.g. Love and Heartbreak")
-                        tags_gen = gr.Textbox(label="tags", placeholder="Example: male pop confidence healing")
+                        theme = gr.Textbox(label="theme", placeholder="Enter song theme, e.g: Love and Heartbreak")
+                        tags_gen = gr.Textbox(label="tags", placeholder="Enter song tags, e.g: pop confidence healing")
                         language = gr.Radio(["zh", "en"], label="Language", value="en")
                         gen_from_theme_btn = gr.Button("Generate LRC (From Theme)", variant="primary")
                         
@@ -269,10 +296,10 @@ with gr.Blocks(css=css) as demo:
 
                     with gr.Group(visible=True): 
                         gr.Markdown("### Method 2: Add Timestamps to Lyrics")
-                        tags_lyrics = gr.Textbox(label="tags", placeholder="Example: female ballad piano slow")
+                        tags_lyrics = gr.Textbox(label="tags", placeholder="Enter song tags, e.g: ballad piano slow")
                         lyrics_input = gr.Textbox(
                             label="Raw Lyrics (without timestamps)",
-                            placeholder="Enter plain lyrics (without timestamps), e.g.:\nYesterday\nAll my troubles...",
+                            placeholder="Enter plain lyrics (without timestamps), e.g:\nYesterday\nAll my troubles...",
                             lines=10,
                             max_lines=50,
                             elem_classes="lyrics-scroll-box"
@@ -326,7 +353,7 @@ with gr.Blocks(css=css) as demo:
     
     lyrics_btn.click(
         fn=infer_music,
-        inputs=[lrc, audio_prompt, steps, file_type],
+        inputs=[lrc, audio_prompt, seed, randomize_seed, steps, file_type],
         outputs=audio_output
     )
 

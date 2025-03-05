@@ -1,7 +1,10 @@
 ---
-title: DiffRhythm
+title: Di♪♪Rhythm
 emoji: 🎶
-colorFrom: green
+tags:
+  - music generation
+  - diffusion models
+colorFrom: red
 colorTo: purple
 sdk: gradio
 sdk_version: 5.20.0

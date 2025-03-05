@@ -58,25 +58,24 @@ def get_style_prompt(model, wav_path):
     if ext == '.mp3':
         meta = MP3(wav_path)
         audio_len = meta.info.length
-        src_sr = meta.info.sample_rate
-    elif ext == '.wav':
-        audio, sr = librosa.load(wav_path, sr=None)
-        audio_len = librosa.get_duration(y=audio, sr=sr)
-        src_sr = sr
+    elif ext in ['.wav', '.flac']:
+        audio_len = librosa.get_duration(path=wav_path)
     else:
         raise ValueError("Unsupported file format: {}".format(ext))
     
-    assert(audio_len >= 10)
+    assert audio_len >= 1, "Input audio length shorter than 1 second"
     
-    mid_time = audio_len // 2
-    start_time = mid_time - 5
-    wav, sr = librosa.load(wav_path, sr=None, offset=start_time, duration=10)
+    if audio_len >= 10:
+        mid_time = audio_len // 2
+        start_time = mid_time - 5
+        wav, _ = librosa.load(wav_path, sr=24000, offset=start_time, duration=10)
     
-    resampled_wav = librosa.resample(wav, orig_sr=src_sr, target_sr=24000)
-    resampled_wav = torch.tensor(resampled_wav).unsqueeze(0).to(model.device)
+    else:
+        wav, _ = librosa.load(wav_path, sr=24000)
+    wav = torch.tensor(wav).unsqueeze(0).to(model.device)
     
     with torch.no_grad():
-        audio_emb = mulan(wavs = resampled_wav) # [1, 512]
+        audio_emb = mulan(wavs = wav) # [1, 512]
         
     audio_emb = audio_emb
     audio_emb = audio_emb.half()
