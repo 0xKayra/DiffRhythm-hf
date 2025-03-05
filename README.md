@@ -1,9 +1,9 @@
 ---
 title: Di♪♪Rhythm
-emoji: 🎶
 tags:
   - music generation
-  - diffusion models
+  - diffusion
+emoji: 🎶
 colorFrom: red
 colorTo: purple
 sdk: gradio
