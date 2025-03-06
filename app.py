@@ -139,6 +139,11 @@ css = """
 
 with gr.Blocks(css=css) as demo:
     gr.HTML(f"""
+            <div style="display: flex; align-items: center;">
+                <img src='https://raw.githubusercontent.com/ASLP-lab/DiffRhythm/refs/heads/main/src/DiffRhythm_logo.jpg' 
+                    style='width: 200px; height: 40%; display: block; margin: 0 auto 20px;'>
+            </div>
+            
             <div style="flex: 1; text-align: center;">
                 <div style="font-size: 2em; font-weight: bold; text-align: center; margin-bottom: 5px">
                     Di♪♪Rhythm (谛韵)
@@ -194,7 +199,7 @@ with gr.Blocks(css=css) as demo:
                         - Shorter clips may lead to incoherent generation
                         
                         4. **Supported Languages**
-                        - Chinese and English
+                        - **Chinese and English**
                         - More languages comming soon
                         """)
                     
@@ -255,7 +260,7 @@ with gr.Blocks(css=css) as demo:
             )
 
         # page 2
-        with gr.Tab("LLM Generate LRC", id=1):
+        with gr.Tab("Lyrics Generate", id=1):
             with gr.Row():
                 with gr.Column():
                     with gr.Accordion("Notice", open=False):

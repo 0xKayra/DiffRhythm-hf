@@ -53,25 +53,17 @@ def get_negative_style_prompt(device):
 
 def get_style_prompt(model, wav_path):
     mulan = model
-    
-    ext = os.path.splitext(wav_path)[-1].lower()
-    if ext == '.mp3':
-        meta = MP3(wav_path)
-        audio_len = meta.info.length
-    elif ext in ['.wav', '.flac']:
-        audio_len = librosa.get_duration(path=wav_path)
-    else:
-        raise ValueError("Unsupported file format: {}".format(ext))
+    audio, _ = librosa.load(wav_path, sr=24000)
+    audio_len = librosa.get_duration(y=audio, sr=24000)
     
     assert audio_len >= 1, "Input audio length shorter than 1 second"
     
-    if audio_len >= 10:
-        mid_time = audio_len // 2
-        start_time = mid_time - 5
-        wav, _ = librosa.load(wav_path, sr=24000, offset=start_time, duration=10)
+    if audio_len > 10:
+        start_time = int(audio_len // 2 - 5)
+        wav = audio[start_time*24000:(start_time+10)*24000]
     
     else:
-        wav, _ = librosa.load(wav_path, sr=24000)
+        wav = audio
     wav = torch.tensor(wav).unsqueeze(0).to(model.device)
     
     with torch.no_grad():
